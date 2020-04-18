@@ -1,0 +1,69 @@
+{
+  "source": {
+    "meta": {
+      "category": [
+        "opendata",
+        "air-quality"
+      ],
+      "legal": {
+        "name": "IRCELINE SOS API",
+        "credit": "IRCELINE",
+        "license": "Creative Common",
+        "provider": "52°North SOS",
+        "regulation": [
+          "INSPIRE 2007/2/EC"
+        ],
+        "documentation": "https://github.com/irceline/open_data"
+      }
+    },
+    "data": {
+      "flow": {
+        "class": "odapi.interfaces.TimeSerie",
+        "name": "Irceline",
+        "version": "0.1.0"
+      },
+      "API": {
+        "type": "RESTful-API",
+        "format": "JSON",
+        "authorization": {
+          "mode": "open"
+        },
+        "documentation": "http://geo.irceline.be/sos/static/doc/api-doc/",
+        "target": "http://geo.irceline.be/sos/api/v1/",
+        "endpoint": {
+          "metadata": "timeseries/?expanded=true",
+          "records": "timeseries/{serieid:}/getData/?force_latest_values=true"
+        }
+      }
+    }
+  },
+  "model": {
+    "keys": {
+      "mapping": {
+        "timeseries": {
+          "id": "serieid",
+          "parameters.phenomenon.id": "measureid"
+        }
+      },
+      "translation": {
+        "measurekey": {
+          "Nitrogen dioxide": "NO2",
+          "Nitrogen monoxide": "NO"
+        },
+        "unitskey": {
+          "percent": "%",
+          "degrees": "°G",
+          "C": "°C"
+        }
+      }
+    },
+    "tables": {
+      "events": [
+        {"label": "Car Free Day 2019", "start": "2019-09-22T09:30:00+02:00",
+          "stop": "2019-09-22T19:00:00+02:00", "tags": "car-free"},
+        {"label": "COVID-19 Lockdown", "start": "2020-03-19T00:00:00+01:00",
+          "stop": null, "tags": "lockdown", "measurekeys": ["NO", "BC"]}
+      ]
+    }
+  }
+}
