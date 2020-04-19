@@ -11,6 +11,21 @@ Time Series
    :members:
    :special-members: __init__
 
+
+Psychrometry
+------------
+
+This module provides classes to draw Psychrometric Chart for Water/Air mixture.
+A typical output is shown below:
+
+ .. image:: resources/figures/psychro.png
+   :width: 480
+   :alt: Wind Bins Mapping
+
+.. automodule:: odapi.toolbox.psychro
+   :members:
+
+
 Weather
 -------
 
@@ -61,7 +76,10 @@ Also notice that the transformation between coordinate systems is an `involution
    :width: 200
    :alt: Wind Rose
 
-.. .. image:: resources/figures/windbins.png
+The algorithm used to define Wind Direction bins from Goniometric angles is summarized on
+the figure below:
+
+ .. image:: resources/figures/windbins.png
    :width: 680
    :alt: Wind Bins Mapping
 
