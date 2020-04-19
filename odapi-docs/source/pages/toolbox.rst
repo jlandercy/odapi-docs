@@ -6,6 +6,21 @@ Toolbox
 Time Series
 -----------
 
+This module provides commodities to handle Time Series.
+Typical outputs is shown below:
+
+ .. image:: resources/figures/ecdf.png
+   :width: 480
+   :alt: Time Series ECDF
+
+ .. image:: resources/figures/autocorr.png
+   :width: 480
+   :alt: Time Series Auto-Correlation
+
+ .. image:: resources/figures/profile.png
+   :width: 480
+   :alt: Time Series Week Profiles
+
 .. automodule:: odapi.toolbox.timeseries
 .. autoclass:: odapi.toolbox.timeseries.TimeSeries
    :members:
@@ -83,6 +98,15 @@ the figure below:
    :width: 680
    :alt: Wind Bins Mapping
 
+Typical outputs is shown below:
+
+ .. image:: resources/figures/windbox.png
+   :width: 380
+   :alt: Wind Box Plots
+
+ .. image:: resources/figures/windrose.png
+   :width: 380
+   :alt: Wind Rose
 
 .. autoclass:: odapi.toolbox.weather.Wind
    :members:
