@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Exceptions &#8212; Open Data API v0.1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Sources" href="sources.html" />
+    <link rel="prev" title="Toolbox" href="toolbox.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sources.html" title="Sources"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="toolbox.html" title="Toolbox"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Open Data API v0.1.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-odapi.errors">
+<span id="exceptions"></span><h1>Exceptions<a class="headerlink" href="#module-odapi.errors" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="generic-exception">
+<h2>Generic Exception<a class="headerlink" href="#generic-exception" title="Permalink to this headline">¶</a></h2>
+<dl class="py exception">
+<dt id="odapi.errors.GenericError">
+<em class="property">exception </em><code class="sig-prename descclassname">odapi.errors.</code><code class="sig-name descname">GenericError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/errors.html#GenericError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.errors.GenericError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic Package Exception must be subclassed not raised</p>
+</dd></dl>
+
+</div>
+<div class="section" id="specialized-exceptions">
+<h2>Specialized Exceptions<a class="headerlink" href="#specialized-exceptions" title="Permalink to this headline">¶</a></h2>
+<dl class="py exception">
+<dt id="odapi.errors.BadParameter">
+<em class="property">exception </em><code class="sig-prename descclassname">odapi.errors.</code><code class="sig-name descname">BadParameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/errors.html#BadParameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.errors.BadParameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>This exception stands for Bad Parameter error in method calls</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt id="odapi.errors.MissingFrequency">
+<em class="property">exception </em><code class="sig-prename descclassname">odapi.errors.</code><code class="sig-name descname">MissingFrequency</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/errors.html#MissingFrequency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.errors.MissingFrequency" title="Permalink to this definition">¶</a></dt>
+<dd><p>This exception stands when a frequency is needed but not found</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Exceptions</a><ul>
+<li><a class="reference internal" href="#generic-exception">Generic Exception</a></li>
+<li><a class="reference internal" href="#specialized-exceptions">Specialized Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="toolbox.html"
+                        title="previous chapter">Toolbox</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="sources.html"
+                        title="next chapter">Sources</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pages/errors.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sources.html" title="Sources"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="toolbox.html" title="Toolbox"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Open Data API v0.1.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+<div class="footer">
+  <span class="copyright">
+    <strong>
+      Open Data API&nbsp;v0.1.0
+    </strong>
+    &nbsp;&mdash;&nbsp;
+      &copy;&nbsp;2020, Jean Landercy&nbsp;&mdash;&nbsp;
+  </span>
+  <span class="meta">
+      Last updated on 2020-04-19&nbsp;&mdash;&nbsp;
+      Created using <a href="https://www.sphinx-doc.org/en/master/">Sphinx</a>&nbsp;3.0.1<br/>
+  </span>
+</div>
+
+  </body>
+</html>

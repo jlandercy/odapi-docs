@@ -1,0 +1,518 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>odapi.toolbox.timeseries &#8212; Open Data API v0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Open Data API v0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for odapi.toolbox.timeseries</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">abc</span>
+
+<span class="kn">import</span> <span class="nn">dateutil</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="c1"># Statistics Toolboxes used in this module:</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">from</span> <span class="nn">statsmodels.distributions.empirical_distribution</span> <span class="kn">import</span> <span class="n">ECDF</span><span class="p">,</span> <span class="n">monotone_fn_inverter</span>
+<span class="kn">from</span> <span class="nn">statsmodels.tsa.seasonal</span> <span class="kn">import</span> <span class="n">seasonal_decompose</span>
+<span class="kn">from</span> <span class="nn">statsmodels.tsa.stattools</span> <span class="kn">import</span> <span class="n">acf</span>
+
+<span class="kn">from</span> <span class="nn">odapi.settings</span> <span class="kn">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">odapi.errors</span> <span class="kn">import</span> <span class="n">BadParameter</span><span class="p">,</span> <span class="n">MissingFrequency</span>
+
+
+<div class="viewcode-block" id="TimeSeries"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries">[docs]</a><span class="k">class</span> <span class="nc">TimeSeries</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Time Series Toolbox</span>
+<span class="sd">    Collections of staticmethod useful when dealing with Time Series.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TimeSeries.coerce_timezone"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.coerce_timezone">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">coerce_timezone</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">timezone</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method coerces a Timestamp to ensure it is Time Zone aware</span>
+
+<span class="sd">        :param t: Valid Timestamp (always prefer ISO-8601 standards)</span>
+<span class="sd">        :type t: str, datetime.datetime, pandas.Timestamp</span>
+
+<span class="sd">        :param timezone: Valid Time Zone Identifier, defaults to &#39;UTC&#39;</span>
+<span class="sd">        :type timezone: str</span>
+
+<span class="sd">        :return: Timestamp Time Zone aware (converted or localized) for the given Time Zone</span>
+<span class="sd">        :rtype: pandas.Timestamp</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">tz_convert</span><span class="p">(</span><span class="n">timezone</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">tz_localize</span><span class="p">(</span><span class="n">timezone</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeries.prepare_parameters"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.prepare_parameters">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">prepare_parameters</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">identifiers</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">span</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">floor</span><span class="o">=</span><span class="s1">&#39;1T&#39;</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">timezone</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method prepares parameters to setup selection and ease underlying API calls.</span>
+
+<span class="sd">        :param identifiers: Selection of any valid primary keys (single or sequence of it) values available</span>
+<span class="sd">                            in underlying API.  It also can be a metadata frame or a selection of rows from metadata.</span>
+<span class="sd">        :type identifiers: int, str, sequences, pandas.DataFrame</span>
+
+<span class="sd">        :param start: Timestamp for the lower bound of left-closed selection time range [start, stop)</span>
+<span class="sd">        :type start: str, datetime.datetime, pandas.Timestamp</span>
+
+<span class="sd">        :param stop: Timestamp for the upper bound of left-closed selection time range [start, stop)</span>
+<span class="sd">        :type stop: str, datetime.datetime, pandas.Timestamp</span>
+
+<span class="sd">        :param span: Timedelta representing the span of the selection time range [stop-span, span)</span>
+<span class="sd">        :type span: str, datetime.timedelta, pandas.Timedelta</span>
+
+<span class="sd">        :param freq: Time Frequency for interval happening with the time range [start, start+1*freq, ..., start+(n-1)*freq, stop)</span>
+<span class="sd">        :type freq: str</span>
+
+<span class="sd">        :param floor: Time Frequency to floor start timestamp (truncation), defaults to &#39;1T&#39;</span>
+<span class="sd">        :type floor: str</span>
+
+<span class="sd">        :param key: Alternative Primary Key name</span>
+<span class="sd">        :type key: str</span>
+
+<span class="sd">        :param timezone: Valid Time Zone Identifier, defaults to &#39;UTC&#39;</span>
+<span class="sd">        :type timezone: str</span>
+
+<span class="sd">        :return: Prepared parameters: identifiers list or frame, start timestamp, stop timestamp and,</span>
+<span class="sd">                                      time ranges equally split by time frequency</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Default Parameters:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">identifiers</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
+            <span class="n">identifiers</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">identifiers</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">identifiers</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="n">identifiers</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">identifiers</span><span class="p">[</span><span class="n">key</span> <span class="ow">or</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_primary_key</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">span</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">span</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="s2">&quot;14 days&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">span</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">span</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">span</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">stop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stop</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">floor</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">stop</span> <span class="o">-</span> <span class="n">span</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">coerce_timezone</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">timezone</span><span class="p">)</span>
+        <span class="n">stop</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">coerce_timezone</span><span class="p">(</span><span class="n">stop</span><span class="p">,</span> <span class="n">timezone</span><span class="p">)</span>
+
+        <span class="n">trange</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+        <span class="n">trange</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">([</span><span class="n">start</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">trange</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">stop</span><span class="p">])</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;identifiers&#39;</span><span class="p">:</span> <span class="n">identifiers</span><span class="p">,</span>
+            <span class="s1">&#39;stop&#39;</span><span class="p">:</span> <span class="n">stop</span><span class="p">,</span>
+            <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span>
+            <span class="s1">&#39;timerange&#39;</span><span class="p">:</span> <span class="n">trange</span>
+        <span class="p">}</span>
+
+        <span class="n">settings</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;PARAM: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">res</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="TimeSeries.get_records"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.get_records">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_records</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identifiers</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get Records&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">events</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Placeholder for Event Table&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Missing events table, you must provide either a table or an implementation&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TimeSeries.daily"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.daily">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">daily</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Map timestamp onto beginning of the day.</span>
+
+<span class="sd">        :param x: A valid timestamp object.</span>
+<span class="sd">        :type x: datetime.datetime, pandas.Timestamp</span>
+
+<span class="sd">        :return: A timestamp mapped to the first day of the day.</span>
+<span class="sd">        :rtype: datetime.datetime, pandas.Timestamp</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">second</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeries.weekly"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.weekly">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">weekly</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Map timestamp onto a generic week that keeps day of week unchanged (useful for daily profile).</span>
+<span class="sd">        Monday 1940-01-01 to Sunday 1940-01-07 is a good candidate for this mapping.</span>
+
+<span class="sd">        :param x: A valid timestamp object.</span>
+<span class="sd">        :type x: datetime.datetime, pandas.Timestamp</span>
+
+<span class="sd">        :return: A timestamp mapped to a day of generic week 1940-01-01/07.</span>
+<span class="sd">        :rtype: datetime.datetime, pandas.Timestamp</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">1940</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="o">+</span><span class="n">x</span><span class="o">.</span><span class="n">weekday</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="TimeSeries.monthly"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.monthly">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">monthly</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Map timestamp onto beginning of the month.</span>
+
+<span class="sd">        :param x: A valid timestamp object.</span>
+<span class="sd">        :type x: datetime.datetime, pandas.Timestamp</span>
+
+<span class="sd">        :return: A timestamp mapped to the first day of the month.</span>
+<span class="sd">        :rtype: datetime.datetime, pandas.Timestamp</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">daily</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeries.yearly"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.yearly">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">yearly</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Map timestamp onto beginning of the year.</span>
+
+<span class="sd">        :param x: A valid timestamp object.</span>
+<span class="sd">        :type x: datetime.datetime, pandas.Timestamp</span>
+
+<span class="sd">        :return: A timestamp mapped to the first day of the year.</span>
+<span class="sd">        :rtype: datetime.datetime, pandas.Timestamp</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">monthly</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">month</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeries.ecdf"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.ecdf">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ecdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;ecdf&#39;</span><span class="p">,</span> <span class="n">rtype</span><span class="o">=</span><span class="s1">&#39;serie&#39;</span><span class="p">,</span> <span class="n">dropna</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Estimate ECDF of Time Series (groupby allowed)</span>
+
+<span class="sd">        :param x: Series or DataFrame</span>
+<span class="sd">        :type x: list, numpy.array, pandas.Series, pandas.DataFrame</span>
+
+<span class="sd">        :param bins: Number of bins to create the histogram (bins &gt; 0), defaults to 100</span>
+<span class="sd">        :type bins: int</span>
+
+<span class="sd">        :param p: Vector of percentiles to estimate (0 &lt;= p &lt;= 1), defaults to None</span>
+<span class="sd">        :type p: list, numpy.array, pandas.Series</span>
+
+<span class="sd">        :param mode: Mode of estimation (ppf or ecdf), defaults to ecdf:</span>
+
+<span class="sd">          - **ppf**: Estimate ECDF from the PPF of the histogram (scipy based);</span>
+<span class="sd">          - **ecdf**: Estimate ECDF from the inverse monotone function using linear spline (statsmodels based).</span>
+<span class="sd">        :type mode: str</span>
+
+<span class="sd">        :param rtype: Control how ECDF is returned (serie or dict), defaults to serie:</span>
+
+<span class="sd">          - **serie**: Return a Pandas serie with ordered interpolated values and required percentiles as index;</span>
+<span class="sd">          - **dict**: Return a dict with all intermediates values (distribution, direct and inverse functions,</span>
+<span class="sd">                      required percentiles and interpolated values).</span>
+<span class="sd">        :type rtype: str</span>
+
+<span class="sd">        :param dropna: Drop NaN values from data (ecdf mode is NaN tolerant), defaults True</span>
+<span class="sd">        :type dropna: bool</span>
+
+<span class="sd">        :return: ECDF estimation for the given series</span>
+<span class="sd">        :rtype: pandas.Series, dict or pandas.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Parameter check/init:</span>
+        <span class="n">modes</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ppf&#39;</span><span class="p">,</span> <span class="s1">&#39;ecdf&#39;</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">modes</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BadParameter</span><span class="p">(</span><span class="s2">&quot;ECDF mode must be in </span><span class="si">{}</span><span class="s2">, received &#39;</span><span class="si">{}</span><span class="s2">&#39; instead&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">modes</span><span class="p">,</span> <span class="n">mode</span><span class="p">))</span>
+        <span class="n">rtypes</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;serie&#39;</span><span class="p">,</span> <span class="s1">&#39;dict&#39;</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">rtype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rtypes</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BadParameter</span><span class="p">(</span><span class="s2">&quot;ECDF rtype must be in </span><span class="si">{}</span><span class="s2">, received &#39;</span><span class="si">{}</span><span class="s2">&#39; instead&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rtypes</span><span class="p">,</span> <span class="n">rtype</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mi">1001</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="c1"># Apply on each serie (allow groupby)</span>
+            <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">ecdf</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Apply on serie:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dropna</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="c1"># Computations:</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;ppf&#39;</span><span class="p">:</span>
+                <span class="n">hist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">)</span>
+                <span class="n">dist</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">rv_histogram</span><span class="p">(</span><span class="n">hist</span><span class="p">)</span>
+                <span class="n">fdir</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">cdf</span>
+                <span class="n">finv</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">ppf</span>
+                <span class="n">xinv</span> <span class="o">=</span> <span class="n">finv</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;ecdf&#39;</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">fdir</span> <span class="o">=</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">ECDF</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                    <span class="n">finv</span> <span class="o">=</span> <span class="n">monotone_fn_inverter</span><span class="p">(</span><span class="n">fdir</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+                    <span class="n">xinv</span> <span class="o">=</span> <span class="n">finv</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ZeroDivisionError</span><span class="p">:</span>
+                    <span class="c1"># Catch error when empty serie (allow groupby)</span>
+                    <span class="n">finv</span> <span class="o">=</span> <span class="n">fdir</span> <span class="o">=</span> <span class="n">dist</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">xinv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="c1"># Create Serie:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">xinv</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">p</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">rtype</span> <span class="o">==</span> <span class="s1">&#39;serie&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">s</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">:</span> <span class="n">p</span><span class="p">,</span> <span class="s1">&#39;xinv&#39;</span><span class="p">:</span> <span class="n">xinv</span><span class="p">,</span> <span class="s1">&#39;fdir&#39;</span><span class="p">:</span> <span class="n">fdir</span><span class="p">,</span> <span class="s1">&#39;finv&#39;</span><span class="p">:</span> <span class="n">finv</span><span class="p">,</span> <span class="s1">&#39;dist&#39;</span><span class="p">:</span> <span class="n">dist</span><span class="p">,</span> <span class="s1">&#39;serie&#39;</span><span class="p">:</span> <span class="n">s</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="TimeSeries.performance"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.performance">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">performance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">limit_area</span><span class="o">=</span><span class="s1">&#39;inside&#39;</span><span class="p">,</span> <span class="n">limit_direction</span><span class="o">=</span><span class="s1">&#39;forward&#39;</span><span class="p">,</span> <span class="n">scenario</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Assess acquisition performance for Time Series (groupby allowed)</span>
+
+<span class="sd">        :param x: Series or DataFrame with defined frequency (mandatory)</span>
+<span class="sd">        :type x: list, numpy.array, pandas.Series, pandas.DataFrame</span>
+
+<span class="sd">        :param scenario: Type of scenario to evaluate performance (must be in :py:data:`{None, &#39;strict&#39;, &#39;forward&#39;, &#39;backward&#39;}`),</span>
+<span class="sd">                         defaults to :py:data:`None` (allow custom performance definition).</span>
+<span class="sd">                         When set, this setting overwrite :py:data:`limit_area` and :py:data:`limit_direction`.</span>
+<span class="sd">                         Scenarii are defined as follow:</span>
+
+<span class="sd">         - **strict**: Performance is evaluated within the interval from the first to the last observed records</span>
+<span class="sd">                        (:py:data:`limit_area=&#39;inside&#39;`)</span>
+<span class="sd">         - **forward**: Performance is evaluated within the interval of first observed record to the end of frame</span>
+<span class="sd">                        (:py:data:`limit_area=None` and :py:data:`limit_direction=&#39;forward&#39;`)</span>
+<span class="sd">         - **backward**: Performance is evaluated within the interval of beginning of the frame to the last observed record</span>
+<span class="sd">                        (:py:data:`limit_area=None` and :py:data:`limit_direction=&#39;backward&#39;`)</span>
+<span class="sd">        :type scenario: str</span>
+
+<span class="sd">        :param limit_area: Limit Area switch as defined in pandas.Series.interpolate</span>
+<span class="sd">        :type limit_area: str</span>
+
+<span class="sd">        :param limit_direction: Limit Direction switch as defined in pandas.Series.interpolate</span>
+<span class="sd">        :type limit_direction: str</span>
+
+<span class="sd">        :return: Acquisition performance statistics (w.r.t acquisition scenario)</span>
+<span class="sd">        :rtype: pandas.Series, dict or pandas.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">scenarii</span> <span class="o">=</span> <span class="p">{</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;strict&#39;</span><span class="p">,</span> <span class="s1">&#39;forward&#39;</span><span class="p">,</span> <span class="s1">&#39;backward&#39;</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">scenario</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">scenarii</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BadParameter</span><span class="p">(</span><span class="s2">&quot;Scenario must be in </span><span class="si">{}</span><span class="s2">, received &#39;</span><span class="si">{}</span><span class="s2">&#39; instead&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">scenarii</span><span class="p">,</span> <span class="n">scenario</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MissingFrequency</span><span class="p">(</span><span class="s2">&quot;DatetimeIndex must have a frequency set: resample timeseries first&quot;</span><span class="p">)</span>
+        <span class="c1"># Create Scenario if defined:</span>
+        <span class="k">if</span> <span class="n">scenario</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">scenario</span> <span class="o">==</span> <span class="s1">&#39;strict&#39;</span><span class="p">:</span>
+                <span class="n">limit_area</span> <span class="o">=</span> <span class="s1">&#39;inside&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">limit_area</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">limit_direction</span> <span class="o">=</span> <span class="n">scenario</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="c1"># Apply on each serie (allow groupby):</span>
+            <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">performance</span><span class="p">)</span><span class="o">.</span><span class="n">unstack</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Apply on serie:</span>
+            <span class="n">xr</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+            <span class="n">xf</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">limit_area</span><span class="o">=</span><span class="n">limit_area</span><span class="p">,</span> <span class="n">limit_direction</span><span class="o">=</span><span class="n">limit_direction</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+            <span class="n">ne</span> <span class="o">=</span> <span class="n">xf</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">size</span>
+            <span class="n">nr</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+            <span class="n">nt</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
+            <span class="k">if</span> <span class="n">ne</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">nr</span> <span class="o">=</span> <span class="n">ne</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span>
+                <span class="s1">&#39;left&#39;</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s1">&#39;right&#39;</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">xf</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span>
+                <span class="s1">&#39;stop&#39;</span><span class="p">:</span> <span class="n">xf</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span>
+                <span class="s1">&#39;expected_count&#39;</span><span class="p">:</span> <span class="n">ne</span><span class="p">,</span>
+                <span class="s1">&#39;real_count&#39;</span><span class="p">:</span> <span class="n">nr</span><span class="p">,</span>
+                <span class="s1">&#39;total_count&#39;</span><span class="p">:</span> <span class="n">nt</span><span class="p">,</span>
+                <span class="s1">&#39;performance&#39;</span><span class="p">:</span> <span class="n">nr</span><span class="o">/</span><span class="n">ne</span><span class="p">,</span>
+                <span class="s1">&#39;fillfactor&#39;</span><span class="p">:</span> <span class="n">nr</span><span class="o">/</span><span class="n">nt</span><span class="p">,</span>
+                <span class="s1">&#39;leftclosed&#39;</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">==</span> <span class="n">x</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s1">&#39;rightclosed&#39;</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="n">x</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="p">})</span></div>
+
+<div class="viewcode-block" id="TimeSeries.holidays"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.holidays">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">holidays</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">timezone</span><span class="o">=</span><span class="s1">&#39;CET&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This methods generates yearly Belgium Holidays events&quot;&quot;&quot;</span>
+        <span class="n">easter</span> <span class="o">=</span> <span class="n">dateutil</span><span class="o">.</span><span class="n">easter</span><span class="o">.</span><span class="n">easter</span><span class="p">(</span><span class="n">year</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span>
+            <span class="c1"># Legal Belgium Holidays</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;New Year </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;legal&#39;</span><span class="p">,</span> <span class="s1">&#39;holidays&#39;</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Easter Sunday </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">easter</span><span class="p">,</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;holidays&#39;</span><span class="p">,</span> <span class="s1">&#39;christian&#39;</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Easter Monday </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">easter</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="s1">&#39;1D&#39;</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;legal&#39;</span><span class="p">,</span> <span class="s1">&#39;holidays&#39;</span><span class="p">,</span> <span class="s1">&#39;christian&#39;</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Labor Day </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;legal&#39;</span><span class="p">,</span> <span class="s1">&#39;holidays&#39;</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Ascension </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">easter</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="s1">&#39;39D&#39;</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;legal&#39;</span><span class="p">,</span> <span class="s1">&#39;holidays&#39;</span><span class="p">,</span> <span class="s1">&#39;christian&#39;</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Pentecost Sunday </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">easter</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="s1">&#39;49D&#39;</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;holidays&#39;</span><span class="p">,</span> <span class="s1">&#39;christian&#39;</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Pentecost Monday </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">easter</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="s1">&#39;50D&#39;</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;legal&#39;</span><span class="p">,</span> <span class="s1">&#39;holidays&#39;</span><span class="p">,</span> <span class="s1">&#39;christian&#39;</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;National Day </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">21</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;legal&#39;</span><span class="p">,</span> <span class="s1">&#39;holidays&#39;</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Assumption Day </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;legal&#39;</span><span class="p">,</span> <span class="s1">&#39;holidays&#39;</span><span class="p">,</span> <span class="s1">&#39;christian&#39;</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;All Saints Day </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;legal&#39;</span><span class="p">,</span> <span class="s1">&#39;holidays&#39;</span><span class="p">,</span> <span class="s1">&#39;christian&#39;</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;1918 Armistice </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">11</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;legal&#39;</span><span class="p">,</span> <span class="s1">&#39;holidays&#39;</span><span class="p">]},</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Christmas </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">25</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;legal&#39;</span><span class="p">,</span> <span class="s1">&#39;holidays&#39;</span><span class="p">,</span> <span class="s1">&#39;christian&#39;</span><span class="p">]},</span>
+            <span class="c1"># School Holidays:</span>
+            <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Summer Holidays </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="s1">&#39;no-school&#39;</span><span class="p">},</span>
+        <span class="p">])</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">tz_localize</span><span class="p">(</span><span class="n">timezone</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;stop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="s1">&#39;1D&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="TimeSeries.groupby_events"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.groupby_events">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">groupby_events</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">events</span><span class="p">,</span> <span class="n">boolean</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method creates a grouper for events w.r.t. DatetimeIndex of the DataFrame&quot;&quot;&quot;</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="n">events</span><span class="o">.</span><span class="n">explode</span><span class="p">(</span><span class="s1">&#39;tags&#39;</span><span class="p">)</span>
+        <span class="c1"># Init Index:</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">q0</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">&lt;</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="c1"># Iter tag grouped events table:</span>
+        <span class="n">eg</span> <span class="o">=</span> <span class="n">events</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;tags&#39;</span><span class="p">)[[</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;stop&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">eg</span><span class="o">.</span><span class="n">itertuples</span><span class="p">():</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="n">q0</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">stop</span><span class="p">):</span>
+                <span class="n">q</span> <span class="o">|=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">&gt;=</span> <span class="n">t0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">&lt;</span> <span class="n">t1</span><span class="p">)</span>
+            <span class="n">index</span><span class="p">[</span><span class="n">row</span><span class="o">.</span><span class="n">Index</span><span class="p">]</span> <span class="o">=</span> <span class="n">q</span>
+        <span class="c1"># Add weekday/weekend:</span>
+        <span class="n">index</span><span class="p">[</span><span class="s1">&#39;weekend&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">weekday</span> <span class="o">&gt;=</span> <span class="mi">5</span>
+        <span class="n">index</span><span class="p">[</span><span class="s1">&#39;weekday&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">~</span><span class="n">index</span><span class="p">[</span><span class="s1">&#39;weekend&#39;</span><span class="p">]</span>
+        <span class="c1"># Convert boolean vector to timeindex:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">boolean</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">index</span><span class="p">:</span>
+                <span class="n">index</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">index</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span>
+        <span class="k">return</span> <span class="n">index</span></div>
+
+<div class="viewcode-block" id="TimeSeries.tag_events"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.tag_events">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">tag_events</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method tags DataFrame w.r.t to DatetimeIndex based on a events frame&quot;&quot;&quot;</span>
+        <span class="n">grouper</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">groupby_events</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">events</span><span class="p">,</span> <span class="n">boolean</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">grouper</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+        <span class="n">coded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">grouper</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">tags</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">c</span><span class="p">)[</span><span class="mi">0</span><span class="p">]])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coded</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">tags</span></div>
+
+<div class="viewcode-block" id="TimeSeries.reglin"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.reglin">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">reglin</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method computes the Linear Regression (OLS) on each serie of a DataFrame&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">reglin</span><span class="p">)</span><span class="o">.</span><span class="n">unstack</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+            <span class="c1"># Numeric time in second and start at the beginning:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;datetime64[ms]&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">/</span><span class="mf">1e3</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">t</span> <span class="o">-</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r_value</span><span class="p">,</span> <span class="n">p_value</span><span class="p">,</span> <span class="n">std_err</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">linregress</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r_value</span><span class="p">,</span> <span class="n">p_value</span><span class="p">,</span> <span class="n">std_err</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span><span class="o">*</span><span class="mi">5</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span>
+                <span class="s1">&#39;slope&#39;</span><span class="p">:</span> <span class="n">slope</span><span class="p">,</span>
+                <span class="s1">&#39;intercept&#39;</span><span class="p">:</span> <span class="n">intercept</span><span class="p">,</span>
+                <span class="s1">&#39;r_value&#39;</span><span class="p">:</span> <span class="n">r_value</span><span class="p">,</span>
+                <span class="s1">&#39;p_value&#39;</span><span class="p">:</span> <span class="n">p_value</span><span class="p">,</span>
+                <span class="s1">&#39;std_err&#39;</span><span class="p">:</span> <span class="n">std_err</span>
+            <span class="p">})</span></div>
+
+<div class="viewcode-block" id="TimeSeries.autocorr"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.autocorr">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">autocorr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fft</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">nlags</span><span class="o">=</span><span class="mi">14</span> <span class="o">*</span> <span class="mi">30</span><span class="p">,</span> <span class="n">missing</span><span class="o">=</span><span class="s1">&#39;conservative&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method estimates Auto-Correlation Function for each serie of a DataFrame&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MissingFrequency</span><span class="p">(</span><span class="s2">&quot;DatetimeIndex must have a frequency set: resample timeseries first&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">acf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fft</span><span class="o">=</span><span class="n">fft</span><span class="p">,</span> <span class="n">nlags</span><span class="o">=</span><span class="n">nlags</span><span class="p">,</span> <span class="n">missing</span><span class="o">=</span><span class="n">missing</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeries.seasonal"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.timeseries.TimeSeries.seasonal">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">seasonal</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This methods performs Seasonal Decomposition on each serie of DataFrame.</span>
+
+<span class="sd">        :math:`y(t) = T(t) + S(t) + e(t)`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MissingFrequency</span><span class="p">(</span><span class="s2">&quot;DatetimeIndex must have a frequency set: resample timeseries first&quot;</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">seasonal_decompose</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+            <span class="s1">&#39;trend&#39;</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">trend</span><span class="p">,</span>
+            <span class="s1">&#39;seasonal&#39;</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">seasonal</span><span class="p">,</span>
+            <span class="s1">&#39;residual&#39;</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">resid</span>
+        <span class="p">})</span><span class="o">.</span><span class="n">unstack</span><span class="p">()</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">holidays</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2012</span><span class="p">,</span> <span class="mi">2021</span><span class="p">)])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Open Data API v0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<div class="footer">
+  <span class="copyright">
+    <strong>
+      Open Data API&nbsp;v0.1.0
+    </strong>
+    &nbsp;&mdash;&nbsp;
+      &copy;&nbsp;2020, Jean Landercy&nbsp;&mdash;&nbsp;
+  </span>
+  <span class="meta">
+      Last updated on 2020-04-19&nbsp;&mdash;&nbsp;
+      Created using <a href="https://www.sphinx-doc.org/en/master/">Sphinx</a>&nbsp;3.0.1<br/>
+  </span>
+</div>
+
+  </body>
+</html>

@@ -1,0 +1,192 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Open Data API &#8212; Open Data API v0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Quick Start Guide" href="pages/quickstart.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pages/quickstart.html" title="Quick Start Guide"
+             accesskey="N">next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">Open Data API v0.1.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="open-data-api">
+<span id="home"></span><h1>Open Data API<a class="headerlink" href="#open-data-api" title="Permalink to this headline">¶</a></h1>
+<p>Welcome to <strong>Open Data API</strong> project documentation page.</p>
+<p>Open Data API (abbreviated to <code class="xref py py-mod docutils literal notranslate"><span class="pre">odapi</span></code>) is a Python3 package providing
+a generic interfaces on top of multiple data sources and data models in
+order to abstract their differences and manipulate them in a standardized way.</p>
+<p>Open Data API mainly standardizes Time Series and Geomatic management using
+the powerful <a class="reference external" href="https://pandas.pydata.org/">Pandas</a> DataFrame object under the hood.</p>
+<p>Open Data API also defines flexible interfaces to control how data model and flow
+are built and enforce quality and consistency of connectors developments.</p>
+<div class="section" id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<p>Open Data API documentation decomposes as follow:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pages/quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pages/connectors.html">Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pages/interfaces.html">Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pages/toolbox.html">Toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pages/errors.html">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pages/sources.html">Sources</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Open Data API uses classic <a class="reference external" href="https://setuptools.readthedocs.io/en/latest/">setuptools</a> flow, to install the package
+just follow the usual procedure:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3 setup.py install
+</pre></div>
+</div>
+<p>The package repository is available at <a class="reference external" href="https://github.com/jlandercy/odapi">https://github.com/jlandercy/odapi</a>.</p>
+</div>
+<div class="section" id="a-kiss-interface">
+<h2>A KISS interface<a class="headerlink" href="#a-kiss-interface" title="Permalink to this headline">¶</a></h2>
+<p>We aim to fit with the KISS principle. Download time series data with
+Open Data API package is as easy as:</p>
+<div class="highlight-python notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">odapi.connectors</span> <span class="kn">import</span> <span class="n">Irceline</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">Irceline</span><span class="p">()</span>
+<span class="n">meta</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">sitekey</span><span class="o">=</span><span class="s1">&#39;41&#39;</span><span class="p">,</span> <span class="n">measurekey</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;NO&#39;</span><span class="p">])</span>
+<span class="n">recs</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_records</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
+</pre></div>
+</td></tr></table></div>
+<p>This light-weight snippet above download the last seven days of
+Nitrogen Oxides for Brussels from the Irceline Air Quality SOS API.</p>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>Learn more about how the package is built and works:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Visit our <a class="reference internal" href="pages/quickstart.html#quickstart"><span class="std std-ref">Quick Start Guide</span></a></p></li>
+<li><p>Use existing APIs defined in <a class="reference internal" href="pages/connectors.html#module-odapi.connectors"><span class="std std-ref">Connectors</span></a></p></li>
+<li><p>Define new APIs using <a class="reference internal" href="pages/interfaces.html#module-odapi.interfaces"><span class="std std-ref">Interfaces</span></a></p></li>
+<li><p>Choose the right method from the <a class="reference internal" href="pages/toolbox.html#module-odapi.toolbox"><span class="std std-ref">Toolbox</span></a></p></li>
+<li><p>Read references about <a class="reference internal" href="pages/sources.html#sources"><span class="std std-ref">Sources</span></a> and underlying APIs</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="indices">
+<h2>Indices<a class="headerlink" href="#indices" title="Permalink to this headline">¶</a></h2>
+<p>Navigate through the package structure:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search</span></a> for a specific object</p></li>
+<li><p>See object references using the <a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p>See package namespace using the <a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Open Data API</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#a-kiss-interface">A KISS interface</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
+<li><a class="reference internal" href="#indices">Indices</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pages/quickstart.html"
+                        title="next chapter">Quick Start Guide</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pages/quickstart.html" title="Quick Start Guide"
+             >next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">Open Data API v0.1.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+<div class="footer">
+  <span class="copyright">
+    <strong>
+      Open Data API&nbsp;v0.1.0
+    </strong>
+    &nbsp;&mdash;&nbsp;
+      &copy;&nbsp;2020, Jean Landercy&nbsp;&mdash;&nbsp;
+  </span>
+  <span class="meta">
+      Last updated on 2020-04-19&nbsp;&mdash;&nbsp;
+      Created using <a href="https://www.sphinx-doc.org/en/master/">Sphinx</a>&nbsp;3.0.1<br/>
+  </span>
+</div>
+
+  </body>
+</html>

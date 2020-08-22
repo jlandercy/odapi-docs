@@ -1,0 +1,546 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Interfaces &#8212; Open Data API v0.1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Toolbox" href="toolbox.html" />
+    <link rel="prev" title="Connectors" href="connectors.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="toolbox.html" title="Toolbox"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="connectors.html" title="Connectors"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Open Data API v0.1.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-odapi.interfaces">
+<span id="interfaces"></span><h1>Interfaces<a class="headerlink" href="#module-odapi.interfaces" title="Permalink to this headline">¶</a></h1>
+<p>Interfaces are used to enforce consistency among connectors in our packages.
+We implement interface with Abstract Base Classes from Python Standard Library.
+Developers are asked to subclass relevant interface to implement new connectors.</p>
+<div class="section" id="api-model">
+<h2>API Model<a class="headerlink" href="#api-model" title="Permalink to this headline">¶</a></h2>
+<p>The figure below shows the <code class="xref py py-mod docutils literal notranslate"><span class="pre">odapi</span></code> package API model and more precisely
+how interfaces are extended and how they can be subclassed to
+implement a connector for a specific data model. On this figure the complete
+dependency of Irceline connector is showed:</p>
+<img alt="Energy Class Architecture" src="../_images/odapi_model.png" style="width: 480px;" />
+<p>There are several level of abstractions:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Module <code class="xref py py-mod docutils literal notranslate"><span class="pre">errors</span></code> provides specific Excpetion used by the package;</p></li>
+<li><p>Package <code class="xref py py-mod docutils literal notranslate"><span class="pre">toolbox</span></code> provides <strong>staticmethod</strong> mangled in classes, then other objects
+can inherit from them;</p></li>
+<li><p>Package <code class="xref py py-mod docutils literal notranslate"><span class="pre">interfaces</span></code> provides <strong>abstractclass</strong> defining interfaces to build
+connectors, all interfaces must inherit from <a class="reference internal" href="#odapi.interfaces.api.API" title="odapi.interfaces.api.API"><code class="xref py py-class docutils literal notranslate"><span class="pre">odapi.interfaces.api.API</span></code></a>;</p></li>
+<li><p>Package <code class="xref py py-mod docutils literal notranslate"><span class="pre">connectors</span></code> provides implemented interfaces that actual can connect
+an underlying API and fetch data from it. The namespace of this package is mangled
+into thematic subpackages and their connectors are available in the global namespace;</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="api-setup">
+<h2>API Setup<a class="headerlink" href="#api-setup" title="Permalink to this headline">¶</a></h2>
+<p>Each interface requires on a JSON file describing the source it relies on.
+Below an example of such a file (simplified from the Irceline setup):</p>
+<div class="highlight-json notranslate"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;source&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;meta&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;category&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;opendata&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;air-quality&quot;</span>
+      <span class="p">],</span>
+      <span class="nt">&quot;legal&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;IRCELINE SOS API&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;credit&quot;</span><span class="p">:</span> <span class="s2">&quot;IRCELINE&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;license&quot;</span><span class="p">:</span> <span class="s2">&quot;Creative Common&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;provider&quot;</span><span class="p">:</span> <span class="s2">&quot;52°North SOS&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;regulation&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="s2">&quot;INSPIRE 2007/2/EC&quot;</span>
+        <span class="p">],</span>
+        <span class="nt">&quot;documentation&quot;</span><span class="p">:</span> <span class="s2">&quot;https://github.com/irceline/open_data&quot;</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;flow&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;odapi.interfaces.TimeSerie&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Irceline&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.1.0&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;API&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;RESTful-API&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;JSON&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;authorization&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;open&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;documentation&quot;</span><span class="p">:</span> <span class="s2">&quot;http://geo.irceline.be/sos/static/doc/api-doc/&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;http://geo.irceline.be/sos/api/v1/&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;endpoint&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;metadata&quot;</span><span class="p">:</span> <span class="s2">&quot;timeseries/?expanded=true&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;records&quot;</span><span class="p">:</span> <span class="s2">&quot;timeseries/{serieid:}/getData/?force_latest_values=true&quot;</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;model&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;keys&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;timeseries&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;serieid&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;parameters.phenomenon.id&quot;</span><span class="p">:</span> <span class="s2">&quot;measureid&quot;</span>
+        <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;translation&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;measurekey&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;Nitrogen dioxide&quot;</span><span class="p">:</span> <span class="s2">&quot;NO2&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;Nitrogen monoxide&quot;</span><span class="p">:</span> <span class="s2">&quot;NO&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;unitskey&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;percent&quot;</span><span class="p">:</span> <span class="s2">&quot;%&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;degrees&quot;</span><span class="p">:</span> <span class="s2">&quot;°G&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;C&quot;</span><span class="p">:</span> <span class="s2">&quot;°C&quot;</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;tables&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;events&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="nt">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Car Free Day 2019&quot;</span><span class="p">,</span> <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="s2">&quot;2019-09-22T09:30:00+02:00&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;stop&quot;</span><span class="p">:</span> <span class="s2">&quot;2019-09-22T19:00:00+02:00&quot;</span><span class="p">,</span> <span class="nt">&quot;tags&quot;</span><span class="p">:</span> <span class="s2">&quot;car-free&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="nt">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;COVID-19 Lockdown&quot;</span><span class="p">,</span> <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="s2">&quot;2020-03-19T00:00:00+01:00&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;stop&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="nt">&quot;tags&quot;</span><span class="p">:</span> <span class="s2">&quot;lockdown&quot;</span><span class="p">,</span> <span class="nt">&quot;measurekeys&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;NO&quot;</span><span class="p">,</span> <span class="s2">&quot;BC&quot;</span><span class="p">]}</span>
+      <span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
+<p>The interface <a class="reference internal" href="#odapi.interfaces.api.API" title="odapi.interfaces.api.API"><code class="xref py py-class docutils literal notranslate"><span class="pre">odapi.interfaces.api.API</span></code></a> expects this file as initial
+setup and provides accessors to several fields stored in it. It is referenced by
+the class member <code class="xref py py-mod docutils literal notranslate"><span class="pre">_setting_path</span></code> and is usually stored in the resources folder
+of the current subpackage.</p>
+</div>
+<div class="section" id="generic-api">
+<h2>Generic API<a class="headerlink" href="#generic-api" title="Permalink to this headline">¶</a></h2>
+<p>API interface copes with underlying data source (REST API, API Client, CLI, static files, etc.),
+it provides a common unified way to get token and metadata from source. This interface is generally
+too crude to be implemented as this. It is rather a template to build a richer interface such
+as <a class="reference internal" href="#odapi.interfaces.timeseries.TimeSeriesAPI" title="odapi.interfaces.timeseries.TimeSeriesAPI"><code class="xref py py-class docutils literal notranslate"><span class="pre">odapi.interfaces.timeseries.TimeSeriesAPI</span></code></a>
+or <a class="reference internal" href="#odapi.interfaces.geomatic.GeomaticAPI" title="odapi.interfaces.geomatic.GeomaticAPI"><code class="xref py py-class docutils literal notranslate"><span class="pre">odapi.interfaces.geomatic.GeomaticAPI</span></code></a>.</p>
+<span class="target" id="module-odapi.interfaces.api"></span><dl class="py class">
+<dt id="odapi.interfaces.api.API">
+<em class="property">class </em><code class="sig-prename descclassname">odapi.interfaces.api.</code><code class="sig-name descname">API</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">credentials</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/interfaces/api.html#API"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.interfaces.api.API" title="Permalink to this definition">¶</a></dt>
+<dd><p><strong>Abstract Base Class:</strong>
+This class stands for API Interface.
+This class provides generic bare logic to handle API data exchange.</p>
+<p>To create a new API from this interface:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Subclass the interface;</p></li>
+<li><p>Populate required class members;</p></li>
+<li><p>Implement abstract methods:</p>
+<ul>
+<li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">odapi.interfaces.API._get_token()</span></code>;</p></li>
+<li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">odapi.interfaces.API.get_metadata()</span></code>.</p></li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+<p>There are two class members to populate:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>_setting_path</strong> (<em>str</em><em>, </em><em>pathlib.Path</em><em>, </em><em>dict</em>) – path to a JSON setting file or dictionary</p></li>
+<li><p><strong>_primary_key</strong> (<em>str</em>) – name of the Primary Key used to bind metadata and data on the underlying API</p></li>
+</ul>
+</dd>
+</dl>
+<p>The snippet below shows how to proceed:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">odapi.interfaces</span> <span class="kn">import</span> <span class="n">API</span>
+
+<span class="k">class</span> <span class="nc">MyAPI</span><span class="p">(</span><span class="n">API</span><span class="p">):</span>
+
+     <span class="n">_primary_key</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span>
+     <span class="n">_settings_path</span> <span class="o">=</span> <span class="s1">&#39;settings.json&#39;</span>
+
+     <span class="k">def</span> <span class="nf">_get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+         <span class="c1"># Call to underlying API to get authorization token</span>
+         <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+     <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;frame&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+         <span class="c1"># Generic method to get a resource from the underlying API</span>
+         <span class="c1"># Use get_token method if a token is required</span>
+         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+     <span class="k">def</span> <span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+         <span class="c1"># Return metadata as a frame using fetch method</span>
+         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="odapi.interfaces.api.API.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">credentials</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/interfaces/api.html#API.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.interfaces.api.API.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize API instance with credentials (optional)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>credentials</strong> (<em>dict</em><em>, </em><em>str</em><em>, </em><em>pathlib.Path</em>) – A dictionary of required fields to authenticate, defaults to None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="odapi.interfaces.api.API._get_token">
+<em class="property">abstract </em><code class="sig-name descname">_get_token</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/interfaces/api.html#API._get_token"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.interfaces.api.API._get_token" title="Permalink to this definition">¶</a></dt>
+<dd><p><strong>Abstract method:</strong>
+This method must return a valid authorization token for subsequent underlying API calls.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>kwargs</strong> (<em>unpacked dict</em>) – Any parameters required by the authentication/authorization flow</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – When no token flow is available.</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Valid authorization token</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str, dict, object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="odapi.interfaces.api.API.fetch">
+<em class="property">abstract </em><code class="sig-name descname">fetch</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">endpoint</span></em>, <em class="sig-param"><span class="n">token</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">params</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'frame'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/interfaces/api.html#API.fetch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.interfaces.api.API.fetch" title="Permalink to this definition">¶</a></dt>
+<dd><p><strong>Abstract method:</strong>
+This method must return a resource from the underlying API.
+It could be a DataFrame, a JSON-like or a bytes object depending on the <code class="docutils literal notranslate"><span class="pre">mode</span></code> switch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>endpoint</strong> (<em>str</em>) – Valid endpoint key defined in <code class="docutils literal notranslate"><span class="pre">source.data.API.endpoint</span></code></p></li>
+<li><p><strong>token</strong> (<em>str</em><em>, </em><em>object</em>) – Valid token for underlying API as returned by <code class="xref py py-meth docutils literal notranslate"><span class="pre">odapi.interfaces.TimeSerie.get_token()</span></code></p></li>
+<li><p><strong>params</strong> (<em>dict</em>) – Parameters to setup the request for resource to fetch</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – Type of returned resource, choices in <code class="docutils literal notranslate"><span class="pre">{'frame',</span> <span class="pre">'json',</span> <span class="pre">'raw'}</span></code>, defaults to frame.</p></li>
+<li><p><strong>kwargs</strong> (<em>unpacked dict</em>) – Any extra parameters required to control the fetch call</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A resource from the underlying API of type defined by <code class="docutils literal notranslate"><span class="pre">mode</span></code> switch</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.DataFrame, bytes or object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="odapi.interfaces.api.API.get_metadata">
+<em class="property">abstract </em><code class="sig-name descname">get_metadata</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/interfaces/api.html#API.get_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.interfaces.api.API.get_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p><strong>Abstract method:</strong>
+This method must return a frame of metadata from the underlying API.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>kwargs</strong> (<em>unpacked dict</em>) – Any parameters required to retrieve the metadata</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Metadata frame where rows are uniquely identified by a column named as defined in <code class="docutils literal notranslate"><span class="pre">_primary_key</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="odapi.interfaces.api.API.meta">
+<em class="property">property </em><code class="sig-name descname">meta</code><a class="headerlink" href="#odapi.interfaces.api.API.meta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shortcut for metadata</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="odapi.interfaces.api.API.token">
+<em class="property">property </em><code class="sig-name descname">token</code><a class="headerlink" href="#odapi.interfaces.api.API.token" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get token for stored credentials</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="time-series-api">
+<h2>Time Series API<a class="headerlink" href="#time-series-api" title="Permalink to this headline">¶</a></h2>
+<p>TimeSeries interface makes a great deal of having accurate timestamps. Because time
+is a complex concept and errors are easy to make but hard to detect, the interface
+enforces several aspects to ensure data quality, mainly:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Each observation, unless irrelevant, is defined over a time interval instead of being a point;</p></li>
+<li><p>All periods are closed to the left, it means an observation stands for [start, stop) interval;</p></li>
+<li><p>All timestamp are enforced to be Time Zone aware to avoid ambiguity, data loss and undecidability
+when Day Saving Time occurs;</p></li>
+<li><p>All exports are enforced with ISO-8601 standards.</p></li>
+</ul>
+</div></blockquote>
+<p>To ease and standardize developments.</p>
+<span class="target" id="module-odapi.interfaces.timeseries"></span><dl class="py class">
+<dt id="odapi.interfaces.timeseries.TimeSeriesAPI">
+<em class="property">class </em><code class="sig-prename descclassname">odapi.interfaces.timeseries.</code><code class="sig-name descname">TimeSeriesAPI</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">credentials</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/interfaces/timeseries.html#TimeSeriesAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.interfaces.timeseries.TimeSeriesAPI" title="Permalink to this definition">¶</a></dt>
+<dd><p><strong>Abstract Base Class:</strong>
+This class stands for Time Serie Interface, it extends API class.
+This class provides generic bare logic to handle Time Series over API.</p>
+<p>To create a new Time Serie from this interface:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Subclass the interface;</p></li>
+<li><p>Populate required class members (see class <code class="xref py py-class docutils literal notranslate"><span class="pre">odapi.interfaces.API</span></code>);</p></li>
+<li><dl class="simple">
+<dt>Implement abstract methods: <code class="xref py py-meth docutils literal notranslate"><span class="pre">odapi.interfaces.TimeSerie.get_records()</span></code></dt><dd><p>(also see class <code class="xref py py-class docutils literal notranslate"><span class="pre">odapi.interfaces.API</span></code>).</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p>The snippet below shows how to proceed:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">odapi.interfaces</span> <span class="kn">import</span> <span class="n">TimeSerie</span>
+
+<span class="k">class</span> <span class="nc">MyAPI</span><span class="p">(</span><span class="n">TimeSerie</span><span class="p">):</span>
+
+     <span class="c1"># ... See API Interface for complete implementation ...</span>
+
+     <span class="k">def</span> <span class="nf">get_records</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identifiers</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+         <span class="c1"># Return records as a frame using fetch method</span>
+         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="odapi.interfaces.timeseries.TimeSeriesAPI.get_records">
+<em class="property">abstract </em><code class="sig-name descname">get_records</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">identifiers</span></em>, <em class="sig-param"><span class="n">start</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/interfaces/timeseries.html#TimeSeriesAPI.get_records"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.interfaces.timeseries.TimeSeriesAPI.get_records" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get Records</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-odapi.interfaces.geomatic">
+<span id="geomatic-api"></span><h2>Geomatic API<a class="headerlink" href="#module-odapi.interfaces.geomatic" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="odapi.interfaces.geomatic.GeomaticAPI">
+<em class="property">class </em><code class="sig-prename descclassname">odapi.interfaces.geomatic.</code><code class="sig-name descname">GeomaticAPI</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">credentials</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/interfaces/geomatic.html#GeomaticAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.interfaces.geomatic.GeomaticAPI" title="Permalink to this definition">¶</a></dt>
+<dd><p><strong>Abstract Base Class:</strong>
+This class stands for Geomatic Interface, it extends API class.
+This class provides generic bare logic to handle Geomatic over API.</p>
+<p>To create a new Geomatic from this interface:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Subclass the interface;</p></li>
+<li><p>Populate required class members (see class <code class="xref py py-class docutils literal notranslate"><span class="pre">odapi.interfaces.API</span></code>);</p></li>
+<li><dl class="simple">
+<dt>Implement abstract methods: <code class="xref py py-meth docutils literal notranslate"><span class="pre">odapi.interfaces.Geomatic.get_geometries()</span></code></dt><dd><p>(also see class <code class="xref py py-class docutils literal notranslate"><span class="pre">odapi.interfaces.API</span></code>).</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p>The snippet below shows how to proceed:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">from</span> <span class="nn">odapi.interfaces</span> <span class="kn">import</span> <span class="n">Geomatic</span>
+
+<span class="k">class</span> <span class="nc">MyAPI</span><span class="p">(</span><span class="n">Geomatic</span><span class="p">):</span>
+
+     <span class="c1"># ... See API Interface for complete implementation ...</span>
+
+     <span class="k">def</span> <span class="nf">get_geometries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identifiers</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+         <span class="c1"># Return geometries as a frame using fetch method</span>
+         <span class="k">return</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="odapi.interfaces.geomatic.GeomaticAPI.get_geometries">
+<em class="property">abstract </em><code class="sig-name descname">get_geometries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">identifiers</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/odapi/interfaces/geomatic.html#GeomaticAPI.get_geometries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#odapi.interfaces.geomatic.GeomaticAPI.get_geometries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get Geometries</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Interfaces</a><ul>
+<li><a class="reference internal" href="#api-model">API Model</a></li>
+<li><a class="reference internal" href="#api-setup">API Setup</a></li>
+<li><a class="reference internal" href="#generic-api">Generic API</a></li>
+<li><a class="reference internal" href="#time-series-api">Time Series API</a></li>
+<li><a class="reference internal" href="#module-odapi.interfaces.geomatic">Geomatic API</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="connectors.html"
+                        title="previous chapter">Connectors</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="toolbox.html"
+                        title="next chapter">Toolbox</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pages/interfaces.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="toolbox.html" title="Toolbox"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="connectors.html" title="Connectors"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Open Data API v0.1.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+<div class="footer">
+  <span class="copyright">
+    <strong>
+      Open Data API&nbsp;v0.1.0
+    </strong>
+    &nbsp;&mdash;&nbsp;
+      &copy;&nbsp;2020, Jean Landercy&nbsp;&mdash;&nbsp;
+  </span>
+  <span class="meta">
+      Last updated on 2020-04-19&nbsp;&mdash;&nbsp;
+      Created using <a href="https://www.sphinx-doc.org/en/master/">Sphinx</a>&nbsp;3.0.1<br/>
+  </span>
+</div>
+
+  </body>
+</html>

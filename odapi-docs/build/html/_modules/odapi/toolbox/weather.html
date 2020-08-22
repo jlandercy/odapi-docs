@@ -1,0 +1,430 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>odapi.toolbox.weather &#8212; Open Data API v0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Open Data API v0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for odapi.toolbox.weather</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">from</span> <span class="nn">odapi.settings</span> <span class="kn">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">odapi.errors</span> <span class="kn">import</span> <span class="n">BadParameter</span>
+
+
+<div class="viewcode-block" id="Wind"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind">[docs]</a><span class="k">class</span> <span class="nc">Wind</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class provides methods to handle Wind series.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Wind.cardinals"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.cardinals">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">cardinals</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Return Major Cardinal Direction and related Goniometric angles&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Wind</span><span class="o">.</span><span class="n">coordinates</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">)[[</span><span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;coord&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;label&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()[</span><span class="s1">&#39;coord&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Wind.coord_labels"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.coord_labels">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">coord_labels</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return Wind Direction bin labels&quot;&quot;&quot;</span>
+        <span class="n">_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;N&quot;</span><span class="p">,</span> <span class="s2">&quot;NNE&quot;</span><span class="p">,</span> <span class="s2">&quot;NE&quot;</span><span class="p">,</span> <span class="s2">&quot;NEE&quot;</span><span class="p">,</span> <span class="s2">&quot;E&quot;</span><span class="p">,</span> <span class="s2">&quot;SEE&quot;</span><span class="p">,</span> <span class="s2">&quot;SE&quot;</span><span class="p">,</span> <span class="s2">&quot;SSE&quot;</span><span class="p">,</span>
+                   <span class="s2">&quot;S&quot;</span><span class="p">,</span> <span class="s2">&quot;SSW&quot;</span><span class="p">,</span> <span class="s2">&quot;SW&quot;</span><span class="p">,</span> <span class="s2">&quot;SWW&quot;</span><span class="p">,</span> <span class="s2">&quot;W&quot;</span><span class="p">,</span> <span class="s2">&quot;NWW&quot;</span><span class="p">,</span> <span class="s2">&quot;NW&quot;</span><span class="p">,</span> <span class="s2">&quot;NNW&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">_labels</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">order</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Wind.coord_bin"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.coord_bin">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">coord_bin</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return coordinate bin measures</span>
+
+<span class="sd">        Wind Rose decompose as :math:`n_\\mathrm{B} = 4 \\cdot 2^{r-1}` bins where :math:`r` is the order</span>
+<span class="sd">        of coordinate detail (equals to the number of letters to code the coordinate label).</span>
+
+<span class="sd">        Coordinate bin thus has a size of :math:`d_\\mathrm{B} = \\frac{360}{n_\\mathrm{B}}` goniometric degrees</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">nB</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="p">(</span><span class="n">order</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">dB</span> <span class="o">=</span> <span class="mi">360</span><span class="o">/</span><span class="n">nB</span>
+        <span class="k">return</span> <span class="n">nB</span><span class="p">,</span> <span class="n">dB</span></div>
+
+<div class="viewcode-block" id="Wind.coord_bins"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.coord_bins">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">coord_bins</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return coordinate bin limits&quot;&quot;&quot;</span>
+        <span class="n">n</span><span class="p">,</span> <span class="n">db</span> <span class="o">=</span> <span class="n">Wind</span><span class="o">.</span><span class="n">coord_bin</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">360</span><span class="p">,</span> <span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">center</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">b</span> <span class="o">-</span> <span class="n">db</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">b</span></div>
+
+<div class="viewcode-block" id="Wind.coordinates"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.coordinates">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">coordinates</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create coordinate table&quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+            <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="n">Wind</span><span class="o">.</span><span class="n">coord_labels</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">),</span>
+            <span class="s1">&#39;coord&#39;</span><span class="p">:</span> <span class="n">Wind</span><span class="o">.</span><span class="n">coord_bins</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">False</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+            <span class="s1">&#39;lower&#39;</span><span class="p">:</span> <span class="n">Wind</span><span class="o">.</span><span class="n">coord_bins</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+            <span class="s1">&#39;upper&#39;</span><span class="p">:</span> <span class="n">Wind</span><span class="o">.</span><span class="n">coord_bins</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">1</span><span class="p">:],</span>
+        <span class="p">})</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">len</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="Wind.coord_index"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.coord_index">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">coord_index</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert Goniometric angles (degrees) into Coordinate Index of order r (float to keep nan)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">coord_index</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">coord_index</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">nB</span><span class="p">,</span> <span class="n">dB</span> <span class="o">=</span> <span class="n">Wind</span><span class="o">.</span><span class="n">coord_bin</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(((</span><span class="n">x</span> <span class="o">+</span> <span class="n">dB</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">dB</span><span class="p">)</span> <span class="o">%</span> <span class="n">nB</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Wind.direction"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.direction">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">direction</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get Wind Direction expressed in Coordinate Indices or Labels&quot;&quot;&quot;</span>
+        <span class="n">tag</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">cidx</span> <span class="o">=</span> <span class="n">Wind</span><span class="o">.</span><span class="n">coord_index</span><span class="p">(</span><span class="n">tag</span><span class="o">.</span><span class="n">dropna</span><span class="p">(),</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">coord_labels</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">))</span>
+        <span class="n">tag</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="o">~</span><span class="n">tag</span><span class="o">.</span><span class="n">isnull</span><span class="p">()]</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">cidx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">tag</span></div>
+
+<div class="viewcode-block" id="Wind.rad2deg"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.rad2deg">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">rad2deg</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert Radians to Degrees&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Wind.deg2rad"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.deg2rad">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">deg2rad</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert Degrees to Radians&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Wind.gonio2trigo_rad"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.gonio2trigo_rad">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">gonio2trigo_rad</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert Goniometric angles (rad) into trigonometric angles (rad)</span>
+
+<span class="sd">        :math:`x_\\mathrm{trigo} = \\frac{\\pi}{2} - x_\\mathrm{gonio}`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x</span></div>
+
+<div class="viewcode-block" id="Wind.trigo2gonio_rad"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.trigo2gonio_rad">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">trigo2gonio_rad</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert Trigonometric angles (rad) into Goniometric angles (rad)</span>
+
+<span class="sd">        :math:`x_\\mathrm{gonio} = \\frac{\\pi}{2} - x_\\mathrm{trigo}`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x</span></div>
+
+<div class="viewcode-block" id="Wind.trigo2gonio_deg"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.trigo2gonio_deg">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">trigo2gonio_deg</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert Trigonometric angles (degrees) into Goniometric angles (degrees)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Wind</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">trigo2gonio_rad</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="Wind.gonio2trigo_deg"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.gonio2trigo_deg">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">gonio2trigo_deg</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert Goniometric angles (degrees) into Trigonometric angles (degrees)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Wind</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">gonio2trigo_rad</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="Wind.radsat"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.radsat">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">radsat</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Saturate Radian angles to [0;2*pi)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Wind.degsat"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.degsat">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">degsat</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Saturate Degrees angles to [0;360)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">%</span> <span class="mi">360</span></div>
+
+<div class="viewcode-block" id="Wind.colormap"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.colormap">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">colormap</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Spectral_r&#39;</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a descrete colormap for Percentile Roses</span>
+<span class="sd">        :param cmap: Color map theme</span>
+<span class="sd">        :param q: Percentile bins boundaries</span>
+<span class="sd">        :return: A colormap and a norm associated to percentiles</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cmap</span><span class="p">)</span>
+        <span class="n">cmaplist</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmap</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">q</span><span class="p">]</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">LinearSegmentedColormap</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="s1">&#39;Custom cmap&#39;</span><span class="p">,</span> <span class="n">cmaplist</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">BoundaryNorm</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">cmap</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span></div>
+
+<div class="viewcode-block" id="Wind.boxplot"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.boxplot">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">boxplot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="s1">&#39;WD/41R001 (°G)&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return distribution by wind direction</span>
+<span class="sd">        :param data:</span>
+<span class="sd">        :param x:</span>
+<span class="sd">        :param theta:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">wd</span> <span class="o">=</span> <span class="n">data</span><span class="p">[[</span><span class="n">theta</span><span class="p">]]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">direction</span><span class="p">)</span>
+        <span class="n">bo</span> <span class="o">=</span> <span class="n">Wind</span><span class="o">.</span><span class="n">coordinates</span><span class="p">()</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gridspec_kw</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;hspace&#39;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s1">&#39;height_ratios&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">3</span><span class="p">]})</span>
+        <span class="n">pair</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">wd</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+        <span class="n">pair</span><span class="o">.</span><span class="n">boxplot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span> <span class="n">positions</span><span class="o">=</span><span class="n">bo</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;label&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">rot</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">pair</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">theta</span><span class="p">)[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">()[</span><span class="n">bo</span><span class="o">.</span><span class="n">label</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Distribution by Wind Directions&quot;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Count&quot;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Wind Direction&quot;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">axes</span></div>
+
+<div class="viewcode-block" id="Wind.rose"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Wind.rose">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">rose</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="s1">&#39;WD/41R001 (°G)&#39;</span><span class="p">,</span> <span class="n">qbins</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">means</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+             <span class="n">q</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Spectral_r&#39;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return polar axe with percentile rose, points and means</span>
+
+<span class="sd">        :param data: DataFrame holding time series including Wind Directions</span>
+<span class="sd">        :param x: DataFrame Key to plot on Percentile Rose</span>
+<span class="sd">        :param theta: DataFrame Key to identify Wind Directions series in Goniometric Degrees</span>
+<span class="sd">        :param qbins: Draw Percentile bins</span>
+<span class="sd">        :param points: Draw experimental points on Rose</span>
+<span class="sd">        :param means: Draw means on Rose</span>
+<span class="sd">        :param cbar: Draw color bar beside rose</span>
+<span class="sd">        :param q: Percentile bins boundaries</span>
+<span class="sd">        :param cmap: Colormap theme</span>
+<span class="sd">        :param figsize: Figure Size</span>
+
+<span class="sd">        :return: An axe holding the Percentile Rose</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Color Map:</span>
+        <span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="n">Wind</span><span class="o">.</span><span class="n">colormap</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">)</span>
+
+        <span class="c1"># Create Polar Axis (projection cannot be changed after axe creation):</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axe</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span> <span class="n">subplot_kw</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;projection&#39;</span><span class="p">:</span> <span class="s1">&#39;polar&#39;</span><span class="p">})</span>
+        <span class="n">axe</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([</span><span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;NE&#39;</span><span class="p">,</span> <span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="s1">&#39;NW&#39;</span><span class="p">,</span> <span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="s1">&#39;SW&#39;</span><span class="p">,</span> <span class="s1">&#39;S&#39;</span><span class="p">,</span> <span class="s1">&#39;SE&#39;</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">axe</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># Add Color Bar:</span>
+        <span class="k">if</span> <span class="n">cbar</span><span class="p">:</span>
+            <span class="n">axb</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">])</span>
+            <span class="n">cbar</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">colorbar</span><span class="o">.</span><span class="n">ColorbarBase</span><span class="p">(</span><span class="n">axb</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">)</span>
+            <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s2">&quot;Percentile Bins&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Bins info:</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">Wind</span><span class="o">.</span><span class="n">gonio2trigo_rad</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">coord_bins</span><span class="p">()))</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Draw Points:</span>
+        <span class="k">if</span> <span class="n">points</span><span class="p">:</span>
+            <span class="n">axe</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">theta</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">gonio2trigo_rad</span><span class="p">),</span>
+                     <span class="n">data</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mf">0.35</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Draw Means:</span>
+        <span class="k">if</span> <span class="n">means</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">coord_index</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">theta</span><span class="p">]))[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="n">axe</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">b</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">db</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Draw Percentiles Rose:</span>
+        <span class="k">if</span> <span class="n">qbins</span><span class="p">:</span>
+
+            <span class="c1"># Compute Rose:</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">theta</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">Wind</span><span class="o">.</span><span class="n">coord_index</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">({</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">})</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s1">&#39;bins&#39;</span><span class="p">)</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">w</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;bins&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">.</span><span class="n">unstack</span><span class="p">()</span>
+
+            <span class="c1"># Render Rose:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">col</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">(</span><span class="mf">1.1</span> <span class="o">*</span> <span class="n">g</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">levels</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="p">])</span>
+                    <span class="c1"># Bar Version (bug):</span>
+                    <span class="c1"># axe.bar(b[i]+db/2, g.iloc[i, j+1], width=db, bottom=g.iloc[i, j],</span>
+                    <span class="c1">#        color=col, edgecolor=&#39;white&#39;, linewidth=0.)</span>
+                    <span class="c1"># Polygon version (reference):</span>
+                    <span class="n">axe</span><span class="o">.</span><span class="n">fill</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]],</span>
+                             <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">g</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">g</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">g</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]],</span>
+                             <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">axe</span></div></div>
+
+
+<div class="viewcode-block" id="Humidity"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Humidity">[docs]</a><span class="k">class</span> <span class="nc">Humidity</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class provides methods yo handle Humidity series.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Sun"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Sun">[docs]</a><span class="k">class</span> <span class="nc">Sun</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class provides methods to cope with Sun properties.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Sun.__init__"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Sun.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">city</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize Sun class</span>
+
+<span class="sd">        :param city: City name</span>
+<span class="sd">        :type city: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">astral.geocoder</span> <span class="kn">import</span> <span class="n">database</span><span class="p">,</span> <span class="n">lookup</span>
+        <span class="k">if</span> <span class="n">city</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">city</span> <span class="o">=</span> <span class="s1">&#39;Brussels&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">city</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">city</span> <span class="o">=</span> <span class="n">lookup</span><span class="p">(</span><span class="n">city</span><span class="p">,</span> <span class="n">database</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_city</span> <span class="o">=</span> <span class="n">city</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">city</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return city object&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_city</span>
+
+<div class="viewcode-block" id="Sun.solar_day"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Sun.solar_day">[docs]</a>    <span class="k">def</span> <span class="nf">solar_day</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;dict&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method returns day information for the given timestamp at the given location</span>
+
+<span class="sd">        :param t: Timestamp when the information must be computed</span>
+<span class="sd">        :type t: str, datetime.datetime, pandas.Timestamp</span>
+
+<span class="sd">        :param mode: Return type (must be in {&#39;astral&#39;, &#39;dict&#39;, &#39;serie&#39;}), defaults to dict</span>
+<span class="sd">        :type mode: str</span>
+
+<span class="sd">        :return: Day information for the given timestamp</span>
+<span class="sd">        :rtype: astral.sun.sun, dict, pandas.Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">astral</span> <span class="kn">import</span> <span class="n">sun</span>
+        <span class="n">modes</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;astral&#39;</span><span class="p">,</span> <span class="s1">&#39;dict&#39;</span><span class="p">,</span> <span class="s1">&#39;serie&#39;</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">modes</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BadParameter</span><span class="p">(</span><span class="s2">&quot;Mode must be in </span><span class="si">{}</span><span class="s2">, received &#39;</span><span class="si">{}</span><span class="s2">&#39; instead&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">modes</span><span class="p">,</span> <span class="n">mode</span><span class="p">))</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">sun</span><span class="o">.</span><span class="n">sun</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">city</span><span class="o">.</span><span class="n">observer</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;astral&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">s</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;dict&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="n">t</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Sun.solar_events"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Sun.solar_events">[docs]</a>    <span class="k">def</span> <span class="nf">solar_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method returns day information on a given time range as events table</span>
+
+<span class="sd">        :param start:</span>
+<span class="sd">        :param stop:</span>
+
+<span class="sd">        :return: Events frame with solar information</span>
+<span class="sd">        :rtype: pandas.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">stop</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="s1">&#39;1D&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ts</span><span class="p">:</span>
+            <span class="n">ds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">solar_day</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;dict&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">ts</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Weather"><a class="viewcode-back" href="../../../pages/toolbox.html#odapi.toolbox.weather.Weather">[docs]</a><span class="k">class</span> <span class="nc">Weather</span><span class="p">(</span><span class="n">Wind</span><span class="p">,</span> <span class="n">Humidity</span><span class="p">,</span> <span class="n">Sun</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class provides methods to handle Wind, Humidity and Sun series.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">Weather</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">Weather</span><span class="o">.</span><span class="n">cardinals</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">Weather</span><span class="o">.</span><span class="n">coordinates</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">)[[</span><span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;coord&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">Weather</span><span class="o">.</span><span class="n">coordinates</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">)[[</span><span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;coord&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">Weather</span><span class="o">.</span><span class="n">coordinates</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">)[[</span><span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;coord&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">Weather</span><span class="o">.</span><span class="n">coord_index</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">Weather</span><span class="o">.</span><span class="n">coord_index</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">Weather</span><span class="o">.</span><span class="n">coord_index</span><span class="p">([]))</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Open Data API v0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<div class="footer">
+  <span class="copyright">
+    <strong>
+      Open Data API&nbsp;v0.1.0
+    </strong>
+    &nbsp;&mdash;&nbsp;
+      &copy;&nbsp;2020, Jean Landercy&nbsp;&mdash;&nbsp;
+  </span>
+  <span class="meta">
+      Last updated on 2020-04-19&nbsp;&mdash;&nbsp;
+      Created using <a href="https://www.sphinx-doc.org/en/master/">Sphinx</a>&nbsp;3.0.1<br/>
+  </span>
+</div>
+
+  </body>
+</html>

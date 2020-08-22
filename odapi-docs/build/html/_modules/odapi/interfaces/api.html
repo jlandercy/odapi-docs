@@ -1,0 +1,315 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>odapi.interfaces.api &#8212; Open Data API v0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Open Data API v0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for odapi.interfaces.api</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">import</span> <span class="nn">pathlib</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">odapi.settings</span> <span class="kn">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">odapi.toolbox.generic</span> <span class="kn">import</span> <span class="n">SettingsFile</span>
+
+
+<div class="viewcode-block" id="API"><a class="viewcode-back" href="../../../pages/interfaces.html#odapi.interfaces.api.API">[docs]</a><span class="k">class</span> <span class="nc">API</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **Abstract Base Class:**</span>
+<span class="sd">    This class stands for API Interface.</span>
+<span class="sd">    This class provides generic bare logic to handle API data exchange.</span>
+
+<span class="sd">    To create a new API from this interface:</span>
+
+<span class="sd">      - Subclass the interface;</span>
+<span class="sd">      - Populate required class members;</span>
+<span class="sd">      - Implement abstract methods:</span>
+
+<span class="sd">        - :py:meth:`odapi.interfaces.API._get_token`;</span>
+<span class="sd">        - :py:meth:`odapi.interfaces.API.get_metadata`.</span>
+
+<span class="sd">    There are two class members to populate:</span>
+
+<span class="sd">    :param _setting_path: path to a JSON setting file or dictionary</span>
+<span class="sd">    :type _setting_path: str, pathlib.Path, dict</span>
+
+<span class="sd">    :param _primary_key: name of the Primary Key used to bind metadata and data on the underlying API</span>
+<span class="sd">    :type _primary_key: str</span>
+
+<span class="sd">    The snippet below shows how to proceed:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">       import pandas as pd</span>
+<span class="sd">       from odapi.interfaces import API</span>
+
+<span class="sd">       class MyAPI(API):</span>
+
+<span class="sd">            _primary_key = &#39;id&#39;</span>
+<span class="sd">            _settings_path = &#39;settings.json&#39;</span>
+
+<span class="sd">            def _get_token(self, **kwargs):</span>
+<span class="sd">                # Call to underlying API to get authorization token</span>
+<span class="sd">                return dict(...)</span>
+
+<span class="sd">            def fetch(self, endpoint, token=None, params=None, mode=&#39;frame&#39;, **kwargs):</span>
+<span class="sd">                # Generic method to get a resource from the underlying API</span>
+<span class="sd">                # Use get_token method if a token is required</span>
+<span class="sd">                return pd.DataFrame(...)</span>
+
+<span class="sd">            def get_metadata(self, **kwargs):</span>
+<span class="sd">                # Return metadata as a frame using fetch method</span>
+<span class="sd">                return pd.DataFrame(...)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_settings_path</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_primary_key</span> <span class="o">=</span> <span class="s1">&#39;channelid&#39;</span>
+
+<div class="viewcode-block" id="API.__init__"><a class="viewcode-back" href="../../../pages/interfaces.html#odapi.interfaces.api.API.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">credentials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize API instance with credentials (optional)</span>
+
+<span class="sd">        :param credentials: A dictionary of required fields to authenticate, defaults to None</span>
+<span class="sd">        :type credentials: dict, str, pathlib.Path</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_credentials</span> <span class="o">=</span> <span class="n">SettingsFile</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">credentials</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_settings</span> <span class="o">=</span> <span class="n">SettingsFile</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_settings_path</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return Stored Credentials&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_credentials</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return settings&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_settings</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">source</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return source&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return model&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">API</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return source API&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="s2">&quot;API&quot;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">target</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return source API target&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">API</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">credentials</span> <span class="ow">or</span> <span class="p">{})</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return formated source API endpoints&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">+</span> <span class="n">v</span> <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">API</span><span class="p">[</span><span class="s2">&quot;endpoint&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return Key Mapping&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">[</span><span class="s1">&#39;keys&#39;</span><span class="p">][</span><span class="s1">&#39;mapping&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">translation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return Key Translation&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">[</span><span class="s1">&#39;keys&#39;</span><span class="p">][</span><span class="s1">&#39;translation&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return Tables&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">[</span><span class="s1">&#39;tables&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="API._get_token"><a class="viewcode-back" href="../../../pages/interfaces.html#odapi.interfaces.api.API._get_token">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        **Abstract method:**</span>
+<span class="sd">        This method must return a valid authorization token for subsequent underlying API calls.</span>
+
+<span class="sd">        :param kwargs: Any parameters required by the authentication/authorization flow</span>
+<span class="sd">        :type kwargs: unpacked dict</span>
+
+<span class="sd">        :raises NotImplementedError: When no token flow is available.</span>
+
+<span class="sd">        :return: Valid authorization token</span>
+<span class="sd">        :rtype: str, dict, object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+    <span class="k">def</span> <span class="nf">get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">credentials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get token from given or stored credentials&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">credentials</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_token</span><span class="p">(</span><span class="o">**</span><span class="n">credentials</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get token for stored credentials&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_token</span><span class="p">()</span>
+
+<div class="viewcode-block" id="API.fetch"><a class="viewcode-back" href="../../../pages/interfaces.html#odapi.interfaces.api.API.fetch">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;frame&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        **Abstract method:**</span>
+<span class="sd">        This method must return a resource from the underlying API.</span>
+<span class="sd">        It could be a DataFrame, a JSON-like or a bytes object depending on the ``mode`` switch.</span>
+
+<span class="sd">        :param endpoint: Valid endpoint key defined in ``source.data.API.endpoint``</span>
+<span class="sd">        :type endpoint: str</span>
+
+<span class="sd">        :param token: Valid token for underlying API as returned by :py:meth:`odapi.interfaces.TimeSerie.get_token`</span>
+<span class="sd">        :type token: str, object</span>
+
+<span class="sd">        :param params: Parameters to setup the request for resource to fetch</span>
+<span class="sd">        :type params: dict</span>
+
+<span class="sd">        :param mode: Type of returned resource, choices in ``{&#39;frame&#39;, &#39;json&#39;, &#39;raw&#39;}``, defaults to frame.</span>
+<span class="sd">        :type mode: str</span>
+
+<span class="sd">        :param kwargs: Any extra parameters required to control the fetch call</span>
+<span class="sd">        :type kwargs: unpacked dict</span>
+
+<span class="sd">        :return: A resource from the underlying API of type defined by ``mode`` switch</span>
+<span class="sd">        :rtype: pandas.DataFrame, bytes or object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="API.get_metadata"><a class="viewcode-back" href="../../../pages/interfaces.html#odapi.interfaces.api.API.get_metadata">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        **Abstract method:**</span>
+<span class="sd">        This method must return a frame of metadata from the underlying API.</span>
+
+<span class="sd">        :param kwargs: Any parameters required to retrieve the metadata</span>
+<span class="sd">        :type kwargs: unpacked dict</span>
+
+<span class="sd">        :return: Metadata frame where rows are uniquely identified by a column named as defined in ``_primary_key``</span>
+<span class="sd">        :rtype: pandas.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">meta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Shortcut for metadata&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Select from meta&quot;&quot;&quot;</span>
+
+        <span class="n">settings</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Selection Keys: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filters</span><span class="p">))</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span>
+
+        <span class="k">def</span> <span class="nf">query</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">meta</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">meta</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">bitwise_or</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">query</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v2</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">v2</span> <span class="ow">in</span> <span class="n">v</span><span class="p">]),</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">queries</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">:</span>
+            <span class="n">queries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">query</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">filters</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">m</span><span class="o">=</span><span class="n">meta</span><span class="p">))</span>
+
+        <span class="n">queries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bitwise_and</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">queries</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">queries</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">settings</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Selected </span><span class="si">{}</span><span class="s2"> row(s): </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">selection</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">set</span><span class="p">(</span><span class="n">selection</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_primary_key</span><span class="p">])))</span>
+        <span class="k">return</span> <span class="n">selection</span></div>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Open Data API v0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<div class="footer">
+  <span class="copyright">
+    <strong>
+      Open Data API&nbsp;v0.1.0
+    </strong>
+    &nbsp;&mdash;&nbsp;
+      &copy;&nbsp;2020, Jean Landercy&nbsp;&mdash;&nbsp;
+  </span>
+  <span class="meta">
+      Last updated on 2020-04-19&nbsp;&mdash;&nbsp;
+      Created using <a href="https://www.sphinx-doc.org/en/master/">Sphinx</a>&nbsp;3.0.1<br/>
+  </span>
+</div>
+
+  </body>
+</html>
